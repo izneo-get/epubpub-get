@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-__version__ = "0.01.0"
+__version__ = "0.02.0"
 """
 Source : https://github.com/izneo-get/epubpub-get
 
 Script pour sauvegarder les livres de epub.pub
 """
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 from bs4 import BeautifulSoup
 import urllib.parse
 import os
@@ -13,6 +15,27 @@ import re
 import sys
 import zipfile
 import shutil
+
+
+def requests_retry_session(
+    retries=5,
+    backoff_factor=1,
+    status_forcelist=(401, 402, 403, 404, 500, 502, 504),
+    session=None,
+):
+    """Permet de gérer les cas simples de problèmes de connexions."""
+    session = session or requests.Session()
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
 
 if __name__ == "__main__":
 
@@ -29,7 +52,8 @@ if __name__ == "__main__":
     if requested_url.upper() == "Q":
         sys.exit()
 
-    response = requests.request("GET", requested_url)
+    #response = requests.request("GET", requested_url)
+    response = requests_retry_session().get(requested_url)
     if response.status_code != 200:
         print("URL introuvable")
         sys.exit()
@@ -37,7 +61,8 @@ if __name__ == "__main__":
     asset = soup.find(title="Read Online(Continuous version)")
     id = asset.attrs["data-readid"]
     url_download = f"https://continuous.epub.pub/epub/{id}"
-    response = requests.request("GET", url_download)
+    #response = requests.request("GET", url_download)
+    response = requests_retry_session().get(url_download)
     if response.status_code != 200:
         print("URL introuvable")
         sys.exit()
@@ -48,7 +73,8 @@ if __name__ == "__main__":
 
     url_base = "/".join(url.split("/")[0:-1]) + "/"
 
-    response = requests.request("GET", url)
+    #response = requests.request("GET", url)
+    response = requests_retry_session().get(url)
 
     output_folder = "DOWNLOADS"
     if not os.path.exists(output_folder):
@@ -75,7 +101,8 @@ if __name__ == "__main__":
         file_name = e.attrs["href"]
         src = url_base + file_name
         print(src, end="")
-        response = requests.request("GET", src)
+        #response = requests.request("GET", src)
+        response = requests_retry_session().get(src)
         if response.status_code == 200:
             print(" OK")
             # Création du répertoire de destination.
@@ -108,7 +135,8 @@ if __name__ == "__main__":
         new_url_base = url_base.split(".epub/")[0] + '.epub/'
         src = new_url_base + file_name
         print(src, end="")
-        response = requests.request("GET", src)
+        #response = requests.request("GET", src)
+        response = requests_retry_session().get(src)
         if response.status_code == 200:
             print(" OK")
             # Création du répertoire de destination.
@@ -146,3 +174,5 @@ if __name__ == "__main__":
             shutil.rmtree(output_folder)
         else:
             print(f"Il y a eu {total_errors} erreurs.")
+
+    os.system("pause")
