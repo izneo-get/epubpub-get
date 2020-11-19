@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__version__ = "0.02.0"
+__version__ = "0.02.1"
 """
 Source : https://github.com/izneo-get/epubpub-get
 
@@ -18,7 +18,7 @@ import shutil
 
 
 def requests_retry_session(
-    retries=5,
+    retries=10,
     backoff_factor=1,
     status_forcelist=(401, 402, 403, 404, 500, 502, 504),
     session=None,
@@ -39,6 +39,7 @@ def requests_retry_session(
 
 if __name__ == "__main__":
 
+    # Récupération de l'URL du livre souhaité (si pas en argument, on le demande).
     requested_url = ""
     if len(sys.argv) > 1:
         requested_url = sys.argv[1]
@@ -52,30 +53,39 @@ if __name__ == "__main__":
     if requested_url.upper() == "Q":
         sys.exit()
 
-    #response = requests.request("GET", requested_url)
+    # Téléchargement de la page.
     response = requests_retry_session().get(requested_url)
     if response.status_code != 200:
         print("URL introuvable")
+        os.system("pause")
         sys.exit()
+
+    # On trouve l'URL de la page de lecture en ligne.
     soup = BeautifulSoup(response.text, "html.parser")
     asset = soup.find(title="Read Online(Continuous version)")
     id = asset.attrs["data-readid"]
     url_download = f"https://continuous.epub.pub/epub/{id}"
-    #response = requests.request("GET", url_download)
     response = requests_retry_session().get(url_download)
     if response.status_code != 200:
         print("URL introuvable")
+        os.system("pause")
         sys.exit()
 
+    # On trouve l'URL de la page qui contient toutes les références (normalement, "content.opf").
     soup = BeautifulSoup(response.text, "html.parser")
     asset = soup.find(id="assetUrl")
     url = asset.attrs["value"]
 
     url_base = "/".join(url.split("/")[0:-1]) + "/"
 
-    #response = requests.request("GET", url)
-    response = requests_retry_session().get(url)
-
+    print(url, end="")
+    try:
+        response = requests_retry_session().get(url)
+    except:
+        print(" ERREUR : impossible de récupérer le fichier (404)")
+        os.system("pause")
+        sys.exit()
+    print(" OK")
     output_folder = "DOWNLOADS"
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
@@ -89,20 +99,27 @@ if __name__ == "__main__":
     total_errors = 0
     if response.status_code != 200:
         print("Format inattendu...")
+        os.system("pause")
         sys.exit()
         
     with open(output_folder + "/content.opf", "wb") as f:
         f.write(response.content)
     soup = BeautifulSoup(response.text, "html.parser")
 
+    # On boucle sur tous les "item" qui composent le livre.
     elems = soup.find_all("item")
 
     for e in elems:
         file_name = e.attrs["href"]
         src = url_base + file_name
         print(src, end="")
-        #response = requests.request("GET", src)
-        response = requests_retry_session().get(src)
+        try:
+            response = requests_retry_session().get(src)
+        except:
+            print(" ERREUR : impossible de récupérer le fichier (404)")
+            os.system("pause")
+            sys.exit()
+
         if response.status_code == 200:
             print(" OK")
             # Création du répertoire de destination.
@@ -130,13 +147,18 @@ if __name__ == "__main__":
             print(f" Erreur {response.status_code}")
             total_errors = total_errors + 1
 
+    # On récupère en plus les fichiers supplémentaires.
     for e in ["mimetype", "META-INF/container.xml"]:
         file_name = e
         new_url_base = url_base.split(".epub/")[0] + '.epub/'
         src = new_url_base + file_name
         print(src, end="")
-        #response = requests.request("GET", src)
-        response = requests_retry_session().get(src)
+        try:
+            response = requests_retry_session().get(src)
+        except:
+            print(" ERREUR : impossible de récupérer le fichier (404)")
+            os.system("pause")
+            sys.exit()
         if response.status_code == 200:
             print(" OK")
             # Création du répertoire de destination.
@@ -152,6 +174,7 @@ if __name__ == "__main__":
             if remove_sponsor and file_name.split(".")[-1].lower() in (
                 "html",
                 "htm",
+                "xhtml"
             ):
                 to_write = re.sub(
                     r"<div id=\"sponsor\">(.+?)</div>", "", response.text
@@ -167,12 +190,14 @@ if __name__ == "__main__":
         print("Problème : '" + output_folder + ".epub' existe déjà.")
         print("On s'arrête là.")
     else:
-        print("Création de l'ePub")
+        print("Création de l'ePub", end="")
         shutil.make_archive(output_folder, "zip", output_folder)
+        print(" OK")
         os.rename(output_folder + ".zip", output_folder + ".epub")
         if total_errors == 0:
             shutil.rmtree(output_folder)
         else:
             print(f"Il y a eu {total_errors} erreurs.")
 
+    # Pause pour que l'utilisateur ait le temps de lire la sortie.
     os.system("pause")
