@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__version__ = "0.04.0"
+__version__ = "0.04.1"
 """
 Source : https://github.com/izneo-get/epubpub-get
 
@@ -48,6 +48,7 @@ def check_version():
             print(f"Version {__version__} (la plus récente)")
         else:
             print(f"Version {__version__} (il existe une version plus récente : {latest_version})")
+            print("https://github.com/izneo-get/epubpub-get/releases")
 
 if __name__ == "__main__":
     base_url_to_remove = (
