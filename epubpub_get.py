@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__version__ = "0.03.0"
+__version__ = "0.04.0"
 """
 Source : https://github.com/izneo-get/epubpub-get
 
@@ -9,11 +9,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 from bs4 import BeautifulSoup
-import urllib.parse
+#import urllib.parse
 import os
 import re
 import sys
-import zipfile
+#import zipfile
 import shutil
 
 
@@ -37,12 +37,25 @@ def requests_retry_session(
     session.mount("https://", adapter)
     return session
 
+def check_version():
+    latest_version_url = 'https://raw.githubusercontent.com/izneo-get/epubpub-get/master/VERSION'
+    res = requests.get(latest_version_url)
+    if res.status_code != 200:
+        print(f"Version {__version__} (impossible de vérifier s'il existe une version plus récente)")
+    else:
+        latest_version = res.text.strip()
+        if latest_version == __version__:
+            print(f"Version {__version__} (la plus récente)")
+        else:
+            print(f"Version {__version__} (il existe une version plus récente : {latest_version})")
 
 if __name__ == "__main__":
     base_url_to_remove = (
         "https://asset.epub.pub/epub/"  # La partie à supprimer pour l'arborescence.
     )
     output_folder = "DOWNLOADS"
+
+    check_version()
 
     # Récupération de l'URL du livre souhaité (si pas en argument, on le demande).
     requested_url = ""

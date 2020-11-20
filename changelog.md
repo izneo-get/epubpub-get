@@ -2,6 +2,9 @@
 
 ## epubpub_get.py 
 
+### Version 0.04.0 (2020-11-20)
+- [NEW] Vérification de la version.
+
 ### Version 0.03.0 (2020-11-19)
 - [CHANGE] Meilleure gestion des sous-dossiers pour certains epub. 
 

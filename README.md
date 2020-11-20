@@ -1,4 +1,4 @@
-# cafeyn-get
+# epubpub-get
 Ce script permet de récupérer un livre présent sur https://www.epub.pub dans la limite des capacités de notre compte existant.
 
 Le but est de pouvoir lire un journal ou un magazine sur un support non compatible avec les applications fournies par Epub.pub. 
